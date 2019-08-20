@@ -14,8 +14,7 @@
                    https://github.com/danielsollondon/azvmimagebuilder/blob/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/readme.md
 #>
 
-#region Config Variables
-    $aibAppID = "cf32a0cc-373c-47c9-9156-0db11f6a6dfc"
+#region Config Constants
 #endregion
 
 #region Pre-check: Check if Module Az is installed
@@ -36,33 +35,38 @@
 #Login with account credentials to set this for the subscription (interactive logon)
 $AzSession = Connect-AzAccount
 
-# Get the tenantID from the session
-$tenantID = $AzSession.Context.Tenant.TenantId
+#region Subscription information
+    # Get the tenantID from the session
+    $tenantID = $AzSession.Context.Tenant.TenantId
+    # Get SubscriptionID for the given TenantID
+    $subscriptionID = (Get-AzSubscription -TenantId $TenantID).SubscriptionId
+#endregion
 
 Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder service - Template Artifact"
 
 #region Set AIB Variables
     # Resource group name - we are using myImageBuilderRG in this example
-    $imageResourceGroup="myWinImgBuilderRG"
+    $imageResourceGroup="aibImageRG"
     # Region location 
     $location="WestUS2"
     # Run output name
     $runOutputName="aibWindows"
     # name of the image to be created
     $imageName="aibWinImage"
-
-    # Get SubscriptionID for the given TenantID
-    $subscriptionID = (Get-AzSubscription -TenantId $TenantID).SubscriptionId
-
     # JSON template file
-    $JSONTemplateFile = "C:\_GitHub\CloudImageBuilder\PowerShell\helloImageTemplateWin.json"
-#endregion Set Variables
+    $jsonTemplateFile = "C:\_GitHub\CloudImageBuilder\PowerShell\helloImageTemplateWin.json"
+    # Type of the Azure Image Builder Image Template (resource)
+    $resourceType = "Microsoft.VirtualMachineImages/ImageTemplates"
+    # Name of the Azure Image Builder Image Template (resource)
+    $resourceName = "helloImageTemplateWin01"
+    #endregion
 
 # Download the template file template (with placeholders) from Daniel Sol's github with Invoke-WebRequest cmdlet
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json" -OutFile $JSONTemplateFile
+# azure CLI: curl https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json -o helloImageTemplateWin.json
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json" -OutFile $jsonTemplateFile
 
 # Replace the placeholders with the variables
-$fileContent = Get-Content -Path $JSONTemplateFile -Raw
+$fileContent = Get-Content -Path $jsonTemplateFile -Raw
 $fileContent = $fileContent.Replace("<subscriptionID>",$subscriptionID)
 $fileContent = $fileContent.Replace("<rgName>",$imageResourceGroup)
 $fileContent = $fileContent.Replace("<region>",$location)
@@ -70,9 +74,10 @@ $fileContent = $fileContent.Replace("<imageName>",$imageName)
 $fileContent = $fileContent.Replace("<runOutputName>",$runOutputName)
 
 # Save the replaced content in the original file
-$fileContent | Set-Content -Path $JSONTemplateFile
+$fileContent | Set-Content -Path $jsonTemplateFile
 
-$JSONConfigFile = (Get-Content -Path $JSONTemplateFile) | ConvertFrom-Json
+# Read the JSON payload from the file and transform to custom PSObject
+$jsonConfigFile = (Get-Content -Path $jsonTemplateFile) | ConvertFrom-Json
 # Create the image template
 # Azure CLI:
 #--properties -p
@@ -94,20 +99,15 @@ $JSONConfigFile = (Get-Content -Path $JSONTemplateFile) | ConvertFrom-Json
 #properties
 
 # submit the image configuration to the VM Image Builder Service (Create the image template artifact)
-# azure CLI:
-    #az resource create \
-    #    --resource-group $imageResourceGroup \
-    #    --properties @helloImageTemplateWin.json \
-    #    --is-full-object \
-    #    --resource-type Microsoft.VirtualMachineImages/imageTemplates \
-    #    -n helloImageTemplateWin01
-
-New-AzResource -ResourceGroupName $imageResourceGroup -ResourceName "helloImageTemplateWin02" -ResourceType "Microsoft.VirtualMachineImages/ImageTemplates" -Properties $JSONConfigFile -IsFullObject -Verbose
+# azure CLI: az resource create --resource-group $imageResourceGroup --properties @helloImageTemplateWin.json --is-full-object --resource-type Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01
+$aibImageTemplate = New-AzResource -ResourceGroupName $imageResourceGroup -ResourceName $resourceName -ResourceType $resourceType -Properties $jsonConfigFile -IsFullObject -Verbose
 
 # wait approx 1-3mins, depending on external links
 
+## Check status of the new resource
+#Get-AzResource -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName
 
-# NOTE: This cmdlet generates an error right now, consulting with Daniel Sol to get a working PowerShell example from him in regards to the Properties argument formatting.
+# NOTE: This cmdlet generates an error right now (azure CLI works!), consulting with Daniel Sol to get a working PowerShell example from him in regards to the Properties argument formatting.
 
 
     <#When complete, this will return a success message back to the console, and create an Image Builder Configuration Template in the $imageResourceGroup. 
@@ -119,18 +119,23 @@ New-AzResource -ResourceGroupName $imageResourceGroup -ResourceName "helloImageT
     # source: https://cloudblogs.microsoft.com/opensource/2019/05/07/announcing-the-public-preview-of-azure-image-builder/
 
 
-# start the image build
-# azure CLI:
-    #az resource invoke-action \
-    #     --resource-group $imageResourceGroup \
-    #     --resource-type  Microsoft.VirtualMachineImages/imageTemplates \
-    #     -n helloImageTemplateWin01 \
-    #     --action Run 
 
 # Build the image, based on the template artifact
-Invoke-AzResourceAction -ResourceGroupName $imageResourceGroup -ResourceType "Microsoft.VirtualMachineImages/ImageTemplates" -ResourceName "helloImageTemplateWin02" -Action "Run"
+# azure CLI: az resource invoke-action --resource-group $imageResourceGroup --resource-type  Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01 --action Run 
+$aibAction = Invoke-AzResourceAction -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Action "Run" -Force
+
+#name                                 status     startTime
+#----                                 ------     ---------
+#54A0B4FD-692A-479C-8C31-B489619A8E57 InProgress 2019-08-20T11:33:00.224556Z
 
 # wait approx 15mins
+
+# Check status of image (created from AIB image template)
+##Get-AzResource -ResourceGroupName $imageResourceGroup -ResourceType "Microsoft.Compute/images" -Name $imageName
+$winImage = Get-AzImage -ResourceGroupName $imageResourceGroup -ImageName $imageName
+
+# Check image storage Profile OsDisk details (retrieve )
+$winImage.StorageProfile.OsDisk
 
 # Logoff Azure session (without any output and session information)
 Disconnect-AzAccount | Out-Null

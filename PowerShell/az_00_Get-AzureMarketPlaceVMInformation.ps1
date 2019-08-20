@@ -50,6 +50,7 @@ MicrosoftWindowsServerHPCPack
 #>
 
 # Check the offerings of a specific Microsoft Windows publisher
+$locationName = "westeurope" 
 $publisherName = "MicrosoftWindowsServer"
 Get-AzVMImageOffer -Location $locationName -PublisherName $publisherName | Select-Object Offer
 
@@ -75,6 +76,7 @@ WindowsServerSemiAnnual
 #>
 
 # Check the offerings of a specific Microsoft Windows publisher
+$locationName = "westeurope" 
 $publisherName = "MicrosoftWindowsDesktop"
 Get-AzVMImageOffer -Location $locationName -PublisherName $publisherName | Select-Object Offer
 
@@ -98,6 +100,7 @@ windows-evd
 #>
 
 # Check the skus for a specific offer (including publisher and location)
+$locationName = "westeurope" 
 $publisherName = "MicrosoftWindowsServer"
 $offerName = "WindowsServer"
 Get-AzVMImageSku -Location $locationName -PublisherName $publisherName -Offer $offerName | Select-Object Skus

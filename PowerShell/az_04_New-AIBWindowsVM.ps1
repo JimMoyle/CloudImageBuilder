@@ -13,8 +13,7 @@
                    https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder
 #>
 
-#region Config Variables
-    $aibAppID = "cf32a0cc-373c-47c9-9156-0db11f6a6dfc"
+#region Config Constants
 #endregion
 
 #region Pre-check: Check if Module Az is installed
@@ -33,46 +32,37 @@
 #endregion
 
 #Login with account credentials to set this for the subscription (interactive logon)
-$AzSession = Connect-AzAccount
+$azSession = Connect-AzAccount
 
-# Get the tenantID from the session
-$tenantID = $AzSession.Context.Tenant.TenantId
+#region Subscription information
+#endregion
 
 Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder service - Template Artifact"
 
 #region Set AIB Variables
     # Resource group name - we are using myImageBuilderRG in this example
-    $imageResourceGroup="myWinImgBuilderRG"
+    $imageResourceGroup="aibImageRG"
     # Region location 
     $location="WestUS2"
-    # Run output name
-    $runOutputName="aibWindows"
     # name of the image to be created
     $imageName="aibWinImage"
+#endregion
 
-    # Get SubscriptionID for the given TenantID
-    $subscriptionID = (Get-AzSubscription -TenantId $TenantID).SubscriptionId
-#endregion Set Variables
-
-# create the VM
-#azure CLI
-#az vm create \
-    #  --resource-group $imageResourceGroup \
-    #  --name aibImgWinVm00 \
-    #  --admin-username aibuser \
-    #  --admin-password $vmpassword \
-    #  --image $imageName \
-    #  --location $location
-
-# VM admin username & password
+# Prep: VM admin username & password
 $VMLocalAdminUser = "aibuser"
 $VMLocalAdminSecurePassword = ConvertTo-SecureString "AIBUserPassword01!" -AsPlainText -Force
-
-# Transfer username and password into a PSCredential object
+# Prep: Transfer username and password into a PSCredential object
 $VMCredential = New-Object System.Management.Automation.PSCredential ($VMLocalAdminUser, $VMLocalAdminSecurePassword)
 
 #Create a new VM, based on the image
-New-AzVM -ResourceGroupName $imageResourceGroup -Name "aibImgWinVM00" -Image $imageName -Credential $VMCredential -Location $location 
+#azure CLI: az vm create --resource-group $imageResourceGroup --name aibImgWinVm00 --admin-username aibuser --admin-password $vmpassword --image $imageName --location $location
+$aibVM = New-AzVM -ResourceGroupName $imageResourceGroup -Name "aibImgWinVM00" -Image $imageName -Credential $VMCredential -Location $location 
+
+# NOTE: It takes a while for the VM to be created and the prompt is returned.
+
+## Check if VM is created
+#Get-AzVM -ResourceGroupName $imageResourceGroup -Name "aibImgWinVM00"
+
 
 # Logoff Azure session (without any output and session information)
 Disconnect-AzAccount | Out-Null

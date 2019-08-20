@@ -11,6 +11,7 @@
 
    Research Links: https://docs.microsoft.com/en-us/powershell/azure/overview?view=azps-1.6.0
                    https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder
+                   https://github.com/danielsollondon/azvmimagebuilder/tree/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image
 #>
 
 #region Config Variables
@@ -37,21 +38,14 @@ Write-Verbose " * Register for the Azure Image Builder service"
 
 # Following the steps from https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder
 
-# Step 1: Register the feature
+# Step 1: Register for Image Builder/VM/Storage features
+# azure CLI: azure feature register --namespace Microsoft.VirtualMachineImages --name VirtualMachineTemplatePreview
 Register-AzProviderFeature -ProviderNamespace Microsoft.VirtualMachineImages -FeatureName VirtualMachineTemplatePreview
 
 # Step 2: Check the status of the feature registration
+# azure CLI: az feature show --namespace Microsoft.VirtualMachineImages --name VirtualMachineTemplatePreview | grep state
 Get-AzProviderFeature -ProviderNamespace Microsoft.VirtualMachineImages -FeatureName VirtualMachineTemplatePreview
-
-<#
-PS C:\Users> Register-AzProviderFeature -FeatureName VirtualMachineTemplatePreview -ProviderNamespace Microsoft.VirtualMachineImages
-
-FeatureName                   ProviderName                   RegistrationState
------------                   ------------                   -----------------
-VirtualMachineTemplatePreview Microsoft.VirtualMachineImages Registering      
-#>
-
-# Step 3: Check your registration
+#or
 Get-AzProviderFeature -ProviderNamespace Microsoft.VirtualMachineImages
 <#
 FeatureName                   ProviderName                   RegistrationState
@@ -63,14 +57,11 @@ Get-AzProviderFeature -ProviderNamespace Microsoft.Storage
 <# 
 $null
 
-Note: the azure CLI does return information:
+NOTE: the azure CLI does return information:
       x@Azure:~$ az provider show -n Microsoft.Storage | grep registrationState
         "registrationState": "Registered",
       x@Azure:~$
 #>
-
-# Register-AzProviderFeature -ProviderNamespace Microsoft.VirtualMachineImages # => requires the FeatureName to be specified as well !!!
-# Register-AzProviderFeature -ProviderNamespace Microsoft-Storage              # => requires the FeatureName to be specified as well !!!
 
 
 # Logoff Azure session
