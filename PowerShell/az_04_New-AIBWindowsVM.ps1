@@ -46,6 +46,8 @@ Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder
     $location="WestUS2"
     # name of the image to be created
     $imageName="aibWinImage"
+    # name of the VM to create from image
+    $vmName = "aibImgWinVM00"
 #endregion
 
 # Prep: VM admin username & password
@@ -56,7 +58,7 @@ $VMCredential = New-Object System.Management.Automation.PSCredential ($VMLocalAd
 
 #Create a new VM, based on the image
 #azure CLI: az vm create --resource-group $imageResourceGroup --name aibImgWinVm00 --admin-username aibuser --admin-password $vmpassword --image $imageName --location $location
-$aibVM = New-AzVM -ResourceGroupName $imageResourceGroup -Name "aibImgWinVM00" -Image $imageName -Credential $VMCredential -Location $location 
+$aibVM = New-AzVM -ResourceGroupName $imageResourceGroup -Name $vmName -Image $imageName -Credential $VMCredential -Location $location 
 
 # NOTE: It takes a while for the VM to be created and the prompt is returned.
 

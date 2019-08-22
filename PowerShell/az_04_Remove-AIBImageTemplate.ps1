@@ -44,16 +44,21 @@ Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder
     $resourceType = "Microsoft.VirtualMachineImages/imageTemplates"
     # resource Name
     $resourceName = "helloImageTemplateWin01"
+    # name of the image to be created
+    $imageName="aibWinImage"
 #endregion Set Variables
+
+# Remove the Azure Image Builder Image (resource)
+Remove-AzImage -ResourceGroupName $imageResourceGroup -ImageName $imageName -Force
 
 # Remove the Azure Image Builder Image Template (resource)
 # azure CLI: #az resource delete --resource-group $imageResourceGroup --resource-type Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01
-Remove-AzResource -ResourceGroupName $aibResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Force -Verbose
+Remove-AzResource -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Force -Verbose
 
 # NOTE: This might take a couple of minutes to be performed
 
-# Check if the resource (template) is removed
-Get-AzResource -ResourceGroupName $aibResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Verbose
+## Check if the resource (template) is removed
+#Get-AzResource -ResourceGroupName $aibResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Verbose
 
 #Get-AzResource : The Resource 'Microsoft.VirtualMachineImages/imageTemplates/helloImageTemplateWin01' under resource group 'myWinImgBuilderRG' was not found.
 
@@ -63,10 +68,10 @@ Get-AzResource -ResourceGroupName $aibResourceGroup -ResourceType $resourceType 
 
 # Remove the Resource Group as well
 # azure CLI: az group delete -n $imageResourceGroup
-Get-AzResourceGroup -Name $aibResourceGroup | Remove-AzResourceGroup -Force -Verbose
+Get-AzResourceGroup -Name $imageResourceGroup | Remove-AzResourceGroup -Force -Verbose
 
-# Check if the RG is removed
-Get-AzResourceGroup -Name $aibResourceGroup
+## Check if the RG is removed
+#Get-AzResourceGroup -Name $aibResourceGroup
 
 # Logoff Azure session (without any output and session information)
 Disconnect-AzAccount | Out-Null

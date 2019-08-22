@@ -15,6 +15,7 @@
 #>
 
 #region Config Constants
+    $apiVersion = "2019-05-01-preview"
 #endregion
 
 #region Pre-check: Check if Module Az is installed
@@ -65,6 +66,11 @@ Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder
 # azure CLI: curl https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json -o helloImageTemplateWin.json
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json" -OutFile $jsonTemplateFile
 
+#$templateUrl = "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json"
+$templateUrl="https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/solutions/5_PowerShell_deployments/armTemplateWin.json"
+
+Invoke-WebRequest -Uri $templateUrl -OutFile $jsonTemplateFile -UseBasicParsing
+
 # Replace the placeholders with the variables
 $fileContent = Get-Content -Path $jsonTemplateFile -Raw
 $fileContent = $fileContent.Replace("<subscriptionID>",$subscriptionID)
@@ -76,31 +82,13 @@ $fileContent = $fileContent.Replace("<runOutputName>",$runOutputName)
 # Save the replaced content in the original file
 $fileContent | Set-Content -Path $jsonTemplateFile
 
-# Read the JSON payload from the file and transform to custom PSObject
-$jsonConfigFile = (Get-Content -Path $jsonTemplateFile) | ConvertFrom-Json
-# Create the image template
-# Azure CLI:
-#--properties -p
-# A JSON-formatted string containing resource properties.
-# => translates to the PowerShell parameter
-# -Properties
-
-## Check the type
-#$JSONConfigFile.GetType().FullName
-# System.Management.Automation.PSCustomObject
-
-## Check the property names
-#$JSONConfigFile.PSObject.Properties.Name
-#type
-#apiVersion
-#location
-#dependsOn
-#tags
-#properties
-
-# submit the image configuration to the VM Image Builder Service (Create the image template artifact)
+# submit the template to the Azure Image Builder Service 
+# (creates the image template artifact and stores dependent artifacts (scripts, etc) in the staging Resource Group IT_<resourcegroupname>_<temmplatename>)
 # azure CLI: az resource create --resource-group $imageResourceGroup --properties @helloImageTemplateWin.json --is-full-object --resource-type Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01
-$aibImageTemplate = New-AzResource -ResourceGroupName $imageResourceGroup -ResourceName $resourceName -ResourceType $resourceType -Properties $jsonConfigFile -IsFullObject -Verbose
+$aibImageTemplate = New-AzResourceGroupDeployment -ResourceGroupName $imageResourceGroup -TemplateParameterFile $jsonTemplateFile -imageTemplateName $resourceName -svclocation $location -ApiVersion $apiVersion
+
+New-AzResourceGroupDeployment -ResourceGroupName $imageResourceGroup -TemplateFile $jsonTemplateFile -Name $resourceName -ApiVersion $apiVersion -Verbose
+#$aibImageTemplate = New-AzResource -ResourceGroupName $imageResourceGroup -ResourceName $resourceName -ResourceType $resourceType -Properties $jsonConfigFile -IsFullObject -Verbose
 
 # wait approx 1-3mins, depending on external links
 
@@ -122,7 +110,7 @@ $aibImageTemplate = New-AzResource -ResourceGroupName $imageResourceGroup -Resou
 
 # Build the image, based on the template artifact
 # azure CLI: az resource invoke-action --resource-group $imageResourceGroup --resource-type  Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01 --action Run 
-$aibAction = Invoke-AzResourceAction -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Action "Run" -Force
+$aibAction = Invoke-AzResourceAction -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Action "Run" -ApiVersion $apiVersion -Force
 
 #name                                 status     startTime
 #----                                 ------     ---------
