@@ -5,13 +5,16 @@
    Create a Windows VM, using Azure Image Builder (Module Az)
 .NOTES
    Author: Esther Barthel, MSc
-   Version: 0.2
+   Version: 0.3
    Created: 2019-08-09
    Updated: 2019-08-22
             Fixed the not working cmdlet for the image template upload to the Azure Image Builder service, 
             thanks to Daniel Sol for providing the correct cmdlet and template file
+   Updated: 2019-09-15
+            Created a new custom template with the Office365 ProPlus and OneDrive per-machine installations in it
 
    Research Links: https://docs.microsoft.com/en-us/powershell/azure/overview?view=azps-1.6.0
+                   https://docs.microsoft.com/en-us/powershell/module/azurerm.resources/new-azurermresourcegroupdeployment?view=azurermps-6.13.0
                    https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder
                    https://github.com/danielsollondon/azvmimagebuilder/blob/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/readme.md
                    https://github.com/danielsollondon/azvmimagebuilder/tree/master/solutions/5_PowerShell_deployments
@@ -25,7 +28,6 @@
     Write-Output ""
     Write-Output "Pre-Check: Check if the Az Module is already installed: "
     If ($null -eq (Get-InstalledModule -Name Az -ErrorAction SilentlyContinue))
-    # $env:psmodulePath (C:\Users\blkrogue\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules;C:\Program Files\Intel\Wired Networking\)
     {
         Write-Output " => Module Az is NOT installed"
         Break
@@ -46,32 +48,30 @@ $AzSession = Connect-AzAccount
     $subscriptionID = (Get-AzSubscription -TenantId $TenantID).SubscriptionId
 #endregion
 
-Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder service - Template Artifact"
+Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder Service"
 
 #region Set AIB Variables
-    # Resource group name - we are using myImageBuilderRG in this example
+    # Resource group name
     $imageResourceGroup="aibImageRG"
     # Region location 
     $location="WestUS2"
     # Run output name
     $runOutputName="aibWindows"
     # name of the image to be created
-    $imageName="aibWinImage"
+    $imageName="aibWVDGoldenImage"
     # JSON template file
-    $jsonTemplateFile = "C:\_GitHub\CloudImageBuilder\PowerShell\helloImageTemplateWin.json"
+    $jsonTemplateFile = "C:\_GitHub\CloudImageBuilder\PowerShell\customTemplateWVD.json"
     # Type of the Azure Image Builder Image Template (resource)
     $resourceType = "Microsoft.VirtualMachineImages/ImageTemplates"
     # Name of the Azure Image Builder Image Template (resource)
-    $resourceName = "helloImageTemplateWin01"
+    $resourceName = "aibWVDTemplate"
     #endregion
 
 # Download the template file template (with placeholders) from Daniel Sol's github with Invoke-WebRequest cmdlet
 # azure CLI: curl https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json -o helloImageTemplateWin.json
 
-
-# NOTE: We have a new template file (added a resouces section)!!!
-#$templateUrl = "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/0_Creating_a_Custom_Windows_Managed_Image/helloImageTemplateWin.json"
-$templateUrl="https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/solutions/5_PowerShell_deployments/armTemplateWin.json"
+# NOTE: Using my new custom template with the Office365 and OneDrive installation in it!!!
+$templateUrl="https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
 
 # Retrieve the template file and save it locally
 Invoke-WebRequest -Uri $templateUrl -OutFile $jsonTemplateFile -UseBasicParsing
@@ -97,24 +97,22 @@ $objTemplateParameter = @{
 # submit the template to the Azure Image Builder Service 
 # (creates the image template artifact and stores dependent artifacts (scripts, etc) in the staging Resource Group IT_<resourcegroupname>_<temmplatename>)
 # azure CLI: az resource create --resource-group $imageResourceGroup --properties @helloImageTemplateWin.json --is-full-object --resource-type Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01
-#-$aibImageTemplate = New-AzResource -ResourceGroupName $imageResourceGroup -ResourceName $resourceName -ResourceType $resourceType -Properties $jsonConfigFile -IsFullObject -Verbose
-
-$aibImageTemplate = New-AzResourceGroupDeployment -ResourceGroupName $imageResourceGroup -Name $resourceName -TemplateFile $jsonTemplateFile -TemplateParameterObject $objTemplateParameter -Verbose
+New-AzResourceGroupDeployment -ResourceGroupName $imageResourceGroup -Name $resourceName -TemplateFile $jsonTemplateFile -TemplateParameterObject $objTemplateParameter -Verbose | Tee-Object aibImageTemplate
 
 # wait approx 1-3mins, depending on external links
+Start-Sleep -Seconds 180
 
 <#
     VERBOSE: Performing the operation "Creating Deployment" on target "aibImageRG".
-    VERBOSE: 15:47:45 - Template is valid.
-    VERBOSE: 15:47:49 - Create template deployment 'helloImageTemplateWin01'
-    VERBOSE: 15:47:49 - Checking deployment status in 5 seconds
-    VERBOSE: 15:47:55 - Checking deployment status in 5 seconds
-    VERBOSE: 15:48:01 - Resource Microsoft.VirtualMachineImages/imageTemplates 'helloImageTemplateWin01' provisioning status is running
-    VERBOSE: 15:48:02 - Checking deployment status in 12 seconds
-    VERBOSE: 15:48:15 - Checking deployment status in 5 seconds
-    VERBOSE: 15:48:20 - Checking deployment status in 11 seconds
-    VERBOSE: 15:48:32 - Checking deployment status in 5 seconds
-    VERBOSE: 15:48:38 - Resource Microsoft.VirtualMachineImages/imageTemplates 'helloImageTemplateWin01' provisioning status is succeeded
+    VERBOSE: 23:30:31 - Template is valid.
+    VERBOSE: 23:30:34 - Create template deployment 'aibWVDTemplate'
+    VERBOSE: 23:30:34 - Checking deployment status in 5 seconds
+    VERBOSE: 23:30:40 - Checking deployment status in 5 seconds
+    VERBOSE: 23:30:46 - Resource Microsoft.VirtualMachineImages/imageTemplates 'aibWVDTemplate' provisioning status is running
+    VERBOSE: 23:30:46 - Checking deployment status in 15 seconds
+    VERBOSE: 23:31:02 - Checking deployment status in 16 seconds
+    VERBOSE: 23:31:19 - Checking deployment status in 5 seconds
+    VERBOSE: 23:31:25 - Resource Microsoft.VirtualMachineImages/imageTemplates 'aibWVDTemplate' provisioning status is succeeded
 #>
 
 ## Check status of the new resource
@@ -123,7 +121,7 @@ $aibImageTemplate = New-AzResourceGroupDeployment -ResourceGroupName $imageResou
 
 # Build the image, based on the template artifact
 # azure CLI: az resource invoke-action --resource-group $imageResourceGroup --resource-type  Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01 --action Run 
-$aibAction = Invoke-AzResourceAction -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Action "Run" -ApiVersion $apiVersion -Force
+Invoke-AzResourceAction -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Action "Run" -ApiVersion $apiVersion -Force -Verbose | Tee-Object aibAction
 
 #name                                 status     startTime
 #----                                 ------     ---------

@@ -1,0 +1,142 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "imageTemplateName": {
+        "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "svclocation": {
+            "type": "string"
+        }
+    },
+    
+    "variables": {
+    },
+
+
+    "resources": [
+      {
+        "name": "[parameters('imageTemplateName')]",
+        "type": "Microsoft.VirtualMachineImages/imageTemplates",
+        "apiVersion": "[parameters('api-version')]",
+        "location": "[parameters('svclocation')]",
+        "dependsOn": [],
+        "properties": {
+            "buildTimeoutInMinutes" : 100,
+        
+            "source": {
+                "type": "PlatformImage",
+                    "publisher": "MicrosoftWindowsDesktop",
+                    "offer": "windows-10",
+                    "sku": "19h1-evd",
+                    "version": "18362.356.1909091636"
+            },
+            "customize": [
+                {
+                    "type": "PowerShell",
+                    "name": "0-prepimagefolders",
+                    "inline": [
+                        "New-Item -ItemType Directory -Path 'C:\\Unzipped' -Force",
+                        "New-Item -ItemType Directory -Path 'C:\\Logs' -Force",
+                        "New-Item -ItemType Directory -Path 'C:\\Install' -Force"
+                    ]
+                },
+                {
+                    "type": "File",
+                    "name": "1-download-office365proplus-zip",
+                    "sourceUri": "https://publicresources.blob.core.windows.net/downloads/Office365ProPlus.zip",
+                    "destination":"C:\\Install\\Office365ProPlus.zip"
+                },
+                {
+                    "type": "PowerShell",
+                    "name": "1-unzip-office365proplus-zip",
+                    "inline": [
+                        "Expand-Archive -Path 'C:\\Install\\Office365ProPlus.zip' -DestinationPath 'C:\\Unzipped' -Force"
+                    ]
+                },
+                {
+                    "type": "PowerShell",
+                    "name": "1-install-office365proplus",
+                    "inline": [
+                        "$cmdPath = 'C:\\Unzipped\\Office365ProPlus\\setup.exe'",
+                        "$cmdArgList = \"/configure `\"C:\\unzipped\\Office365ProPlus\\WVDconfiguration.xml`\"\"",
+                        "Start-Process -FilePath $cmdPath -ArgumentList $cmdArgList -PassThru | Wait-Process -Timeout 1800 -ErrorAction SilentlyContinue"
+                    ]
+                },
+                {
+                    "type": "PowerShell",
+                    "name": "1-install-office365proplus-postinstall-tweaks",
+                    "inline": [
+                        "# Mount the default user registry hive",
+                        "reg load HKU\\TempDefault \"C:\\Users\\Default\\NTUSER.DAT\"",
+                        "# Must be executed with default registry hive mounted",
+                        "reg add HKU\\TempDefault\\SOFTWARE\\Policies\\Microsoft\\office\\16.0\\common /v InsiderSlabBehavior /t REG_DWORD /d 2 /f",
+                        "# Set Outlook's Cached Exchange Mode behavior (Must be executed with default registry hive mounted)",
+                        "reg add \"HKU\\TempDefault\\software\\policies\\microsoft\\office\\16.0\\outlook\\cached mode\" /v enable /t REG_DWORD /d 1 /f",
+                        "reg add \"HKU\\TempDefault\\software\\policies\\microsoft\\office\\16.0\\outlook\\cached mode\" /v syncwindowsetting /t REG_DWORD /d 1 /f",
+                        "reg add \"HKU\\TempDefault\\software\\policies\\microsoft\\office\\16.0\\outlook\\cached mode\" /v CalendarSyncWindowSetting /t REG_DWORD /d 1 /f",
+                        "reg add \"HKU\\TempDefault\\software\\policies\\microsoft\\office\\16.0\\outlook\\cached mode\" /v CalendarSyncWindowSettingMonths  /t REG_DWORD /d 1 /f",
+                        "# Unmount the default user registry hive",
+                        "reg unload HKU\\TempDefault",
+                        "# Set the Office Update UI behavior",
+                        "reg add HKLM\\SOFTWARE\\Policies\\Microsoft\\office\\16.0\\common\\officeupdate /v hideupdatenotifications /t REG_DWORD /d 1 /f",
+                        "reg add HKLM\\SOFTWARE\\Policies\\Microsoft\\office\\16.0\\common\\officeupdate /v hideenabledisableupdates /t REG_DWORD /d 1 /f"
+                    ]
+                },
+                {
+                    "type": "File",
+                    "name": "2-download-onedrivepermachine-zip",
+                    "sourceUri": "https://publicresources.blob.core.windows.net/downloads/OneDrivePerMachine.zip",
+                    "destination":"C:\\Install\\OneDrivePerMachine.zip"
+                },
+                {
+                    "type": "PowerShell",
+                    "name": "2-unzip-onedrivepermachine-zip",
+                    "inline": [
+                        "Expand-Archive -Path 'C:\\Install\\OneDrivePerMachine.zip' -DestinationPath 'C:\\Unzipped' -Force"
+                    ]
+                },
+                {
+                    "type": "PowerShell",
+                    "name": "2-install-onedrivepermachine",
+                    "inline": [
+                        "# Uninstall any existing OneDrive per-user installations",
+                        "$cmdPath = 'C:\\Unzipped\\OneDrivePerMachine\\OneDriveSetup.exe'",
+                        "$cmdArgList = \"/uninstall\"",
+                        "Start-Process -FilePath $cmdPath -ArgumentList $cmdArgList -PassThru | Wait-Process -Timeout 600 -ErrorAction SilentlyContinue",
+                        "# Set the AllUsersInstall registry for OneDrive",
+                        "reg add HKLM\\Software\\Microsoft\\OneDrive\" /v \"AllUsersInstall\" /t REG_DWORD /d 1 /reg:64",
+                        "# Install OneDrive in per-machine mode",
+                        "$cmdPath = 'C:\\Unzipped\\OneDrivePerMachine\\OneDriveSetup.exe'",
+                        "$cmdArgList = \"/allusers\"",
+                        "Start-Process -FilePath $cmdPath -ArgumentList $cmdArgList -PassThru | Wait-Process -Timeout 600 -ErrorAction SilentlyContinue",
+                        "# Configure OneDrive to start at sign in for all users",
+                        "reg add \"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v OneDrive /t REG_SZ /d \"C:\\Program Files (x86)\\Microsoft OneDrive\\OneDrive.exe /background\" /f",
+                        "# Enable Silently configure user account",
+                        "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\OneDrive\" /v \"SilentAccountConfig\" /t REG_DWORD /d 1 /f",
+                        "# Redirect and move Windows known folders to OneDrive",
+                        "#reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\OneDrive\" /v \"KFMSilentOptIn\" /t REG_SZ /d \"<your-AzureAdTenantId>\" /f"
+                    ]
+                }
+            ],
+            "distribute": 
+            [
+                {   "type":"ManagedImage",
+                    "imageId": "/subscriptions/<subscriptionID>/resourceGroups/<rgName>/providers/Microsoft.Compute/images/<imageName>",
+                    "location": "<region>",
+                    "runOutputName": "<runOutputName>",
+                    "artifactTags": {
+                        "source": "azVmImageBuilder",
+                        "baseosimg": "windows10"
+                    }
+                }
+            ]
+            }
+        }
+
+    
+    ]
+}    

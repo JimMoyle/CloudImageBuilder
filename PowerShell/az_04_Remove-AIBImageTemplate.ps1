@@ -43,13 +43,13 @@ Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder
     # resource Type
     $resourceType = "Microsoft.VirtualMachineImages/imageTemplates"
     # resource Name
-    $resourceName = "helloImageTemplateWin01"
+    $resourceName = "aibWVDTemplate"
     # name of the image to be created
-    $imageName="aibWinImage"
+    $imageName="aibWVDGoldenImage"
 #endregion Set Variables
 
 # Remove the Azure Image Builder Image (resource)
-Remove-AzImage -ResourceGroupName $imageResourceGroup -ImageName $imageName -Force
+Remove-AzImage -ResourceGroupName $imageResourceGroup -ImageName $imageName -Force -Verbose
 
 # Remove the Azure Image Builder Image Template (resource)
 # azure CLI: #az resource delete --resource-group $imageResourceGroup --resource-type Microsoft.VirtualMachineImages/imageTemplates -n helloImageTemplateWin01
@@ -58,7 +58,7 @@ Remove-AzResource -ResourceGroupName $imageResourceGroup -ResourceType $resource
 # NOTE: This might take a couple of minutes to be performed
 
 ## Check if the resource (template) is removed
-#Get-AzResource -ResourceGroupName $aibResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Verbose
+#Get-AzResource -ResourceGroupName $imageResourceGroup -ResourceType $resourceType -ResourceName $resourceName -Verbose
 
 #Get-AzResource : The Resource 'Microsoft.VirtualMachineImages/imageTemplates/helloImageTemplateWin01' under resource group 'myWinImgBuilderRG' was not found.
 

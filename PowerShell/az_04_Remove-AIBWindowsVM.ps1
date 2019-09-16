@@ -21,7 +21,6 @@
     Write-Output ""
     Write-Output "Pre-Check: Check if the Az Module is already installed: "
     If ($null -eq (Get-InstalledModule -Name Az -ErrorAction SilentlyContinue))
-    # $env:psmodulePath (C:\Users\blkrogue\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules;C:\Program Files\Intel\Wired Networking\)
     {
         Write-Output " => Module Az is NOT installed"
         Break
@@ -43,9 +42,9 @@ Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder
     # Region location 
     $location="WestUS2"
     # name of the image to be created
-    $imageName="aibWinImage"
+    $imageName="aibWVDGoldenImage"
     # name of the VM to create from image
-    $vmName = "aibImgWinVM00"
+    $vmName = "aibWVDVM00"
 #endregion Set Variables
 
 # Remove the created VM, based on the Azure Image Builder image
