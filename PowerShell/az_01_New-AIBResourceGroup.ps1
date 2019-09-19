@@ -48,7 +48,7 @@ Write-Verbose " * Creating a Custom Windows Managed Image w/ Azure Image Builder
 
 #region Set AIB Variables
     # Resource group name - we are using myImageBuilderRG in this example
-    $imageResourceGroup="aibImageRG"
+    $imageResourceGroup = "aibImageRG"
     # Region location 
     $location="WestUS2"
 #endregion Set Variables
