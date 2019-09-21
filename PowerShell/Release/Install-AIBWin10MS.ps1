@@ -12,6 +12,22 @@ function Install-AIBWin10MS {
         [string]$Location,
 
         [Parameter(
+            Position = 2,
+            ValuefromPipelineByPropertyName = $true,
+            Mandatory = $true
+        )]
+        [Alias('Name')]
+        [string]$ResourceGroupName,
+
+        [Parameter(
+            Position = 2,
+            ValuefromPipelineByPropertyName = $true,
+            Mandatory = $true
+        )]
+        [Alias('Id')]
+        [string]$subscriptionID,
+
+        [Parameter(
             ValuefromPipelineByPropertyName = $true,
             ValuefromPipeline = $true
         )]
@@ -19,7 +35,7 @@ function Install-AIBWin10MS {
     )
 
     BEGIN {
-        #Requires -Modules 'Az'
+        #Requires -Modules 'Az.Compute', 'Az.Resources', 'Az.Accounts'
         Set-StrictMode -Version Latest
         if ($Credential) {
             $azSession = Connect-AzAccount -Credential $Credential
@@ -28,10 +44,13 @@ function Install-AIBWin10MS {
             $azSession = Connect-AzAccount
         }
         $tenantID = $AzSession.Context.Tenant.TenantId
-        $subscriptionID = (Get-AzSubscription -TenantId $TenantID).SubscriptionId
+        if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ){
+            Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
+            exit
+        }
         $apiVersion = "2019-05-01-preview"
         #region get functions
-        $Private = @( Get-ChildItem -Path $PSScriptRoot\functions\*.ps1 -ErrorAction SilentlyContinue )
+        $Private = @( Get-ChildItem -Path $PSScriptRoot\..\functions\*.ps1 -ErrorAction SilentlyContinue )
 
         #Dot source the files
         Foreach ($import in $Private) {
@@ -52,12 +71,11 @@ function Install-AIBWin10MS {
         $aibProvider = Get-AzProviderFeature -ProviderNamespace Microsoft.VirtualMachineImages -FeatureName VirtualMachineTemplatePreview
 
         if ($aibProvider.RegistrationState -ne 'Registered') {
-            Write-Error "pre-reqs not met for Azure Image Builder attempting to register VirtualMachineTemplatePreview.  Check https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder for all pre-requisite steps"
+            Write-Error "pre-reqs not met for Azure Image Builder.  Check https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder for all pre-requisite steps"
             exit
         }
 
-        New-AIBResourceGroup -Name TestAibResource -Location $Location -SubcriptionID $subscriptionID -TenantID $tenantID
-
+        New-AIBResourceGroup -Name $ResourceGroupName -Location $Location -SubscriptionID $subscriptionID -TenantID $tenantID | Out-Null
         
     } #Process
     END { } #End
