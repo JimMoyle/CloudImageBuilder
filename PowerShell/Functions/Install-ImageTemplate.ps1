@@ -25,7 +25,7 @@ function Install-ImageTemplate {
             ValuefromPipelineByPropertyName = $true,
             Mandatory = $true
         )]
-        [System.String]$imageName,
+        [System.String]$ImageName,
 
         [Parameter(
             ValuefromPipelineByPropertyName = $true,
@@ -73,15 +73,15 @@ function Install-ImageTemplate {
         $fileContent | Set-Content -Path $jsonTemplateFile
 
         $objTemplateParameter = @{
-            "imageTemplateName" = $resourceName;
-            "api-version"       = $ApiVersion;
-            "svclocation"       = $location;
+            "imageTemplateName" = $resourceName
+            "api-version"       = $ApiVersion
+            "svclocation"       = $Location
         }
 
         $paramsRGD = @{
             ResourceGroupName       = $ResourceGroupName
-            Name                    = $ResourceName 
-            TemplateFile            = $jsonTemplateFile 
+            Name                    = $ResourceName
+            TemplateFile            = $jsonTemplateFile
             TemplateParameterObject = $objTemplateParameter
         }
 

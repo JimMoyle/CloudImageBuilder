@@ -41,7 +41,7 @@ function New-AIBResourceGroup {
     } # Begin
     PROCESS {
 
-        New-AzResourceGroup -Name $Name -Location $location
+        New-AzResourceGroup -Name $Name -Location $Location
         
         $paramNewAzRoleAssignment = @{
             ApplicationId      = $AzureImageBuilderAppID
@@ -49,10 +49,8 @@ function New-AIBResourceGroup {
             Scope              = "/subscriptions/$SubscriptionID/resourceGroups/$Name"
         }
 
-        New-AzRoleAssignment @paramNewAzRoleAssignment 
-
-
-        
+        New-AzRoleAssignment @paramNewAzRoleAssignment
+       
     } #Process
     END { } #End
 }  #function New-AIBResourceGroup

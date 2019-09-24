@@ -3,51 +3,49 @@ function Install-AIBWin10MS {
     [CmdletBinding()]
 
     Param (
+        
         [Parameter(
             Position = 1,
             ValuefromPipelineByPropertyName = $true,
             ValuefromPipeline = $true,
             Mandatory = $true
         )]
-        [string]$Location,
+        [string]$Name,
 
         [Parameter(
             Position = 2,
             ValuefromPipelineByPropertyName = $true,
             Mandatory = $true
         )]
-        [Alias('Name')]
-        [string]$ResourceGroupName,
+        [string]$Location,
 
         [Parameter(
-            Position = 2,
             ValuefromPipelineByPropertyName = $true,
             Mandatory = $true
         )]
         [Alias('Id')]
-        [string]$subscriptionID,
+        [string]$SubscriptionID
 
-        [Parameter(
-            ValuefromPipelineByPropertyName = $true,
-            ValuefromPipeline = $true
-        )]
-        [System.Management.Automation.PSCredential]$Credential
     )
 
     BEGIN {
         #Requires -Modules 'Az.Compute', 'Az.Resources', 'Az.Accounts'
+
         Set-StrictMode -Version Latest
-        if ($Credential) {
-            $azSession = Connect-AzAccount -Credential $Credential
+
+        $azContext = Get-AzContext
+
+        if ($azContext.Subscription.Id -ne $SubscriptionID) {
+            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccout or Select-AzContext to correct this."
+            exit
         }
-        else{
-            $azSession = Connect-AzAccount
-        }
-        $tenantID = $AzSession.Context.Tenant.TenantId
-        if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ){
+
+        $tenantID = $azContext.Subscription.TenantId
+        if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ) {
             Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
             exit
         }
+
         $apiVersion = "2019-05-01-preview"
         #region get functions
         $Private = @( Get-ChildItem -Path $PSScriptRoot\..\functions\*.ps1 -ErrorAction SilentlyContinue )
@@ -75,7 +73,26 @@ function Install-AIBWin10MS {
             exit
         }
 
-        New-AIBResourceGroup -Name $ResourceGroupName -Location $Location -SubscriptionID $subscriptionID -TenantID $tenantID | Out-Null
+        $paramNewAIBResourceGroup = @{
+            Name           = $Name
+            Location       = $Location
+            SubscriptionID = $subscriptionID
+            TenantID       = $tenantID
+        }
+        New-AIBResourceGroup @paramNewAIBResourceGroup #| Out-Null
+
+        $paramsInstallImageTemplate = @{
+            Location          = $Location
+            ResourceGroupName = $Name
+            SubscriptionID    = $subscriptionID
+            RunOutputName     = $Name + "Windows"
+            ImageName         = $Name + "GoldenImage"
+            ResourceName      = $Name + "WVDTemplate"
+            ApiVersion        = $apiVersion
+            TemplateUrl       = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
+            ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
+        }
+        Install-ImageTemplate @paramsInstallImageTemplate
         
     } #Process
     END { } #End
