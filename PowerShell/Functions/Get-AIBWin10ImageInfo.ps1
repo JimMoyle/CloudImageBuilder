@@ -32,7 +32,7 @@ function Get-AIBWin10ImageInfo {
     PROCESS {
         
         $commonParams = @{
-            Location = $Location 
+            Location      = $Location 
             PublisherName = $PublisherName
         }
 
@@ -55,14 +55,14 @@ function Get-AIBWin10ImageInfo {
         $newestImage = $sku | Get-AzVMImage | Sort-Object -Descending -Property Version | Select-Object -First 1
 
         $output = [PSCustomObject]@{
-            Publisher   = $publisherName
-            Offer       = $Offer
-            Skus        = $newestImage.Skus
-            Version     = $newestImage.Version
+            Publisher = $publisherName
+            Offer     = $Offer
+            Sku       = $newestImage.Skus
+            Version   = $newestImage.Version
         }
 
         Write-Output $output
 
     } #Process
-    END {} #End
+    END { } #End
 }  #function Get-AIBWin10ImageInfo

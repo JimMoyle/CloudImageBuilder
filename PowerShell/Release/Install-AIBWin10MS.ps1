@@ -41,9 +41,12 @@ function Install-AIBWin10MS {
     )
 
     BEGIN {
+        Set-StrictMode -Version Latest
+
         #Requires -Modules 'Az.Compute', 'Az.Resources', 'Az.Accounts'
 
-        Set-StrictMode -Version Latest
+        #This will change once we are in GA, hopefully just to use the latest version
+        $apiVersion = "2019-05-01-preview"
 
         $azContext = Get-AzContext
 
@@ -58,7 +61,7 @@ function Install-AIBWin10MS {
             exit
         }
 
-        $apiVersion = "2019-05-01-preview"
+
         #region get functions
         $Private = @( Get-ChildItem -Path $PSScriptRoot\..\functions\*.ps1 -ErrorAction SilentlyContinue )
 
@@ -108,20 +111,16 @@ function Install-AIBWin10MS {
             Sku                        = $imageInfo.Sku
             PathToCustomizationScripts = $PathToCustomizationScripts
         }
-        $template = Update-AibTemplate @paramsUpdateAibTemplate
+        $template = Update-AibTemplate @paramsUpdateAibTemplate #| Out-Null
 
         $paramsInstallImageTemplate = @{
             Location          = $Location
             ResourceGroupName = $Name
-            SubscriptionID    = $subscriptionID
-            RunOutputName     = $Name + "Windows"
-            ImageName         = $Name + "GoldenImage"
             ResourceName      = $Name + "WVDTemplate"
-            ApiVersion        = $apiVersion
-            TemplateUrl       = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
             ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
+            Template          = $template
         }
-        Install-ImageTemplate @paramsInstallImageTemplate
+        Install-ImageTemplate @paramsInstallImageTemplate #| Out-Null
         
     } #Process
     END { } #End

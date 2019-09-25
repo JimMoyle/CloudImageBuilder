@@ -16,24 +16,6 @@ function Install-ImageTemplate {
         [System.String]$ResourceGroupName,
 
         [Parameter(
-            ValuefromPipelineByPropertyName = $true,
-            Mandatory = $true
-        )]
-        [System.String]$RunOutputName,
-
-        [Parameter(
-            ValuefromPipelineByPropertyName = $true,
-            Mandatory = $true
-        )]
-        [System.String]$ImageName,
-
-        [Parameter(
-            ValuefromPipelineByPropertyName = $true,
-            Mandatory = $true
-        )]
-        [System.String]$SubscriptionId,
-
-        [Parameter(
             ValuefromPipelineByPropertyName = $true
         )]
         [System.String]$ResourceType = "Microsoft.VirtualMachineImages/ImageTemplates",
@@ -44,14 +26,10 @@ function Install-ImageTemplate {
         [System.String]$ResourceName = "aibWVDTemplate",
 
         [Parameter(
-            ValuefromPipelineByPropertyName = $true
+            ValuefromPipelineByPropertyName = $true,
+            Mandatory = $true
         )]
-        [System.String]$ApiVersion = "2019-05-01-preview",
-
-        [Parameter(
-            ValuefromPipelineByPropertyName = $true
-        )]
-        [System.String]$TemplateUrl = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
+        [System.Object]$Template
     )
 
     BEGIN {
@@ -59,7 +37,7 @@ function Install-ImageTemplate {
     } # Begin
     PROCESS {   
 
-        $objTemplateParameter = @{
+        $templateParameterObject = @{
             "imageTemplateName" = $resourceName
             "api-version"       = $ApiVersion
             "svclocation"       = $Location
@@ -68,10 +46,11 @@ function Install-ImageTemplate {
         $paramsRGD = @{
             ResourceGroupName       = $ResourceGroupName
             Name                    = $ResourceName
-            TemplateFile            = $jsonTemplateFile
-            TemplateParameterObject = $objTemplateParameter
+            TemplateObject          = $Template
+            TemplateParameterObject = $templateParameterObject
         }
 
+        
         New-AzResourceGroupDeployment  @paramsRGD
 
         $paramsRA = @{

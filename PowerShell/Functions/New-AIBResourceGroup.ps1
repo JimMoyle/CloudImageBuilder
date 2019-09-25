@@ -40,7 +40,7 @@ function New-AIBResourceGroup {
         Set-StrictMode -Version Latest
     } # Begin
     PROCESS {
-
+        # Create a resource group to store the image configuration template artifact and the image
         New-AzResourceGroup -Name $Name -Location $Location
         
         $paramNewAzRoleAssignment = @{
@@ -49,6 +49,7 @@ function New-AIBResourceGroup {
             Scope              = "/subscriptions/$SubscriptionID/resourceGroups/$Name"
         }
 
+        # Set Permission on the Resource Group (The --assignee value is the app registration ID for the Image Builder service.)
         New-AzRoleAssignment @paramNewAzRoleAssignment
        
     } #Process

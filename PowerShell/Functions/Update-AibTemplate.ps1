@@ -115,7 +115,7 @@ function Update-AibTemplate {
         #grab json file content getting rid of http stuff and convert to object
         $template = $jsonTemplate.Content | ConvertFrom-Json
 
-        #Set tempate values
+        #Set template values
         $template.resources.properties.buildTimeoutInMinutes = $BuildTimeoutInMinutes
         $template.resources.properties.source.publisher = $PublisherName
         $template.resources.properties.source.offer = $Offer
