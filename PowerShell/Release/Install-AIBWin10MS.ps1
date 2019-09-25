@@ -36,13 +36,13 @@ function Install-AIBWin10MS {
         $azContext = Get-AzContext
 
         if ($azContext.Subscription.Id -ne $SubscriptionID) {
-            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccout or Select-AzContext to correct this."
+            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccount or Select-AzContext to correct this."
             exit
         }
 
         $tenantID = $azContext.Subscription.TenantId
         if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ) {
-            Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
+            Write-Error "Cannot find subscription Id $subscriptionID in tenant"
             exit
         }
 
@@ -87,7 +87,7 @@ function Install-AIBWin10MS {
             SubscriptionID    = $subscriptionID
             RunOutputName     = $Name + "Windows"
             ImageName         = $Name + "GoldenImage"
-            ResourceName      = $Name + "WVDTemplate"
+            ResourceName      = $Name + "Template"
             ApiVersion        = $apiVersion
             TemplateUrl       = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
             ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
