@@ -57,20 +57,7 @@ function Install-ImageTemplate {
     BEGIN {
         Set-StrictMode -Version Latest
     } # Begin
-    PROCESS {
-
-        $jsonTemplateFile = "$env:TEMP\JSONTemplate.json"
-        
-        Invoke-WebRequest -Uri $templateUrl -OutFile $jsonTemplateFile -UseBasicParsing
-
-        $fileContent = Get-Content -Path $jsonTemplateFile -Raw
-        $fileContent = $fileContent.Replace("<subscriptionID>", $SubscriptionID)
-        $fileContent = $fileContent.Replace("<rgName>", $ResourceGroupName)
-        $fileContent = $fileContent.Replace("<region>", $Location)
-        $fileContent = $fileContent.Replace("<imageName>", $ImageName)
-        $fileContent = $fileContent.Replace("<runOutputName>", $RunOutputName)
-
-        $fileContent | Set-Content -Path $jsonTemplateFile
+    PROCESS {   
 
         $objTemplateParameter = @{
             "imageTemplateName" = $resourceName

@@ -20,6 +20,18 @@ function Install-AIBWin10MS {
         [string]$Location,
 
         [Parameter(
+            Position = 3,
+            ValuefromPipelineByPropertyName = $true
+        )]
+        [string]$OutputType = 'ManagedImage',
+
+        [Parameter(
+            Position = 3,
+            ValuefromPipelineByPropertyName = $true
+        )]
+        [string]$PathToCustomizationScripts,
+
+        [Parameter(
             ValuefromPipelineByPropertyName = $true,
             Mandatory = $true
         )]
@@ -36,13 +48,13 @@ function Install-AIBWin10MS {
         $azContext = Get-AzContext
 
         if ($azContext.Subscription.Id -ne $SubscriptionID) {
-            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccount or Select-AzContext to correct this."
+            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccout or Select-AzContext to correct this."
             exit
         }
 
         $tenantID = $azContext.Subscription.TenantId
         if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ) {
-            Write-Error "Cannot find subscription Id $subscriptionID in tenant"
+            Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
             exit
         }
 
@@ -69,7 +81,7 @@ function Install-AIBWin10MS {
         $aibProvider = Get-AzProviderFeature -ProviderNamespace Microsoft.VirtualMachineImages -FeatureName VirtualMachineTemplatePreview
 
         if ($aibProvider.RegistrationState -ne 'Registered') {
-            Write-Error "pre-reqs not met for Azure Image Builder.  Check https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder for all pre-requisite steps"
+            Write-Error "pre-reqs not met for Azure Image Builder. Check https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder for all pre-requisite steps"
             exit
         }
 
@@ -81,13 +93,30 @@ function Install-AIBWin10MS {
         }
         New-AIBResourceGroup @paramNewAIBResourceGroup #| Out-Null
 
+        $paramsUpdateAibTemplate = @{
+            TemplateUrl                = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
+            ApiVersion                 = $apiVersion
+            SubscriptionID             = $subscriptionID
+            ResourceGroupName          = $Name
+            Location                   = $Location
+            ImageName                  = $Name + "GoldenImage"
+            RunOutputName              = $Name + "WindowsRun"
+            PublisherName              = $imageInfo.Publisher
+            Offer                      = $imageInfo.Offer
+            ImageVersion               = $imageInfo.Version
+            Type                       = $OutputType
+            Sku                        = $imageInfo.Sku
+            PathToCustomizationScripts = $PathToCustomizationScripts
+        }
+        $template = Update-AibTemplate @paramsUpdateAibTemplate
+
         $paramsInstallImageTemplate = @{
             Location          = $Location
             ResourceGroupName = $Name
             SubscriptionID    = $subscriptionID
             RunOutputName     = $Name + "Windows"
             ImageName         = $Name + "GoldenImage"
-            ResourceName      = $Name + "Template"
+            ResourceName      = $Name + "WVDTemplate"
             ApiVersion        = $apiVersion
             TemplateUrl       = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
             ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
