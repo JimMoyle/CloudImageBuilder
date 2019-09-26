@@ -150,8 +150,10 @@ function Update-AibTemplate {
                 $template.resources.properties.customize += $customization
             }
         }
+
+        $output = ConvertTo-Hashtable -InputObject $template #| ConvertTo-Json
         
-        Write-Output $template
+        Write-Output $output
 
     } #Process
     END { } #End
