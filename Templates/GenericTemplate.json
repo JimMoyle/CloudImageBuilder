@@ -1,0 +1,53 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "imageTemplateName": {
+        "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "svclocation": {
+            "type": "string"
+        }
+    },
+    
+    "variables": {
+    },
+
+
+    "resources": [
+      {
+        "name": "[parameters('imageTemplateName')]",
+        "type": "Microsoft.VirtualMachineImages/imageTemplates",
+        "apiVersion": "[parameters('api-version')]",
+        "location": "[parameters('svclocation')]",
+        "dependsOn": [],
+        "properties": {
+            "buildTimeoutInMinutes" : "int",
+        
+            "source": {
+                "type": "PlatformImage",
+                    "publisher": "string",
+                    "offer": "string",
+                    "sku": "string",
+                    "version": "string"
+            },
+            "customize": [
+            ],
+            "distribute": 
+            [
+                {   "type":"string",
+                    "imageId": "string",
+                    "location": "string",
+                    "runOutputName": "string",
+                    "artifactTags": {
+                       
+                    }
+                }
+            ]
+            }
+        }
+    ]
+}    
