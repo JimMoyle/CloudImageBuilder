@@ -29,7 +29,7 @@ function Install-ImageTemplate {
             ValuefromPipelineByPropertyName = $true,
             Mandatory = $true
         )]
-        [System.Object]$Template
+        [string]$TemplateFile
     )
 
     BEGIN {
@@ -46,7 +46,7 @@ function Install-ImageTemplate {
         $paramsRGD = @{
             ResourceGroupName       = $ResourceGroupName
             Name                    = $ResourceName
-            TemplateObject          = $Template
+            TemplateFile            = $TemplateFile
             TemplateParameterObject = $templateParameterObject
         }
 

@@ -113,7 +113,8 @@ function Update-AibTemplate {
         }
 
         #grab json file content getting rid of http stuff and convert to object
-        $template = $jsonTemplate.Content | ConvertFrom-Json
+        #$template = $jsonTemplate.Content | ConvertFrom-Json
+        $template= gc Templates\GenericTemplate.json | convertfrom-json
 
         #Set template values
         $template.resources.properties.buildTimeoutInMinutes = $BuildTimeoutInMinutes
@@ -143,7 +144,7 @@ function Update-AibTemplate {
                 $customization = [PSCustomObject]@{
                     type   = 'PowerShell'
                     name   = $file.BaseName
-                    inline = Get-Content -Path $file.FullName
+                    inline = Get-Content -Path $file.FullName | ForEach-Object {$_.ToString()}
                 }
 
                 #Add customisation to template
@@ -151,8 +152,8 @@ function Update-AibTemplate {
             }
         }
 
-        $output = ConvertTo-Hashtable -InputObject $template #| ConvertTo-Json
-        
+        $output = ConvertTo-Json -InputObject $template -Depth 6
+
         Write-Output $output
 
     } #Process

@@ -1,4 +1,4 @@
-function Install-AIBWin10MS {
+function Install-AibWin10MS {
 
     [CmdletBinding()]
 
@@ -45,23 +45,6 @@ function Install-AIBWin10MS {
 
         #Requires -Modules 'Az.Compute', 'Az.Resources', 'Az.Accounts'
 
-        #This will change once we are in GA, hopefully just to use the latest version
-        $apiVersion = "2019-05-01-preview"
-
-        $azContext = Get-AzContext
-
-        if ($azContext.Subscription.Id -ne $SubscriptionID) {
-            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccout or Select-AzContext to correct this."
-            exit
-        }
-
-        $tenantID = $azContext.Subscription.TenantId
-        if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ) {
-            Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
-            exit
-        }
-
-
         #region get functions
         $Private = @( Get-ChildItem -Path $PSScriptRoot\..\functions\*.ps1 -ErrorAction SilentlyContinue )
 
@@ -78,6 +61,22 @@ function Install-AIBWin10MS {
         #endregion
     } # Begin
     PROCESS {
+
+        #This will change once we are in GA, hopefully just to use the latest version
+        $apiVersion = "2019-05-01-preview"
+
+        $azContext = Get-AzContext
+        
+        if ($azContext.Subscription.Id -ne $SubscriptionID) {
+            Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccout or Select-AzContext to correct this."
+            exit
+        }
+        
+        $tenantID = $azContext.Subscription.TenantId
+        if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ) {
+            Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
+            exit
+        }
 
         $imageInfo = Get-AIBWin10ImageInfo -Location $Location
 
@@ -102,7 +101,7 @@ function Install-AIBWin10MS {
             SubscriptionID             = $subscriptionID
             ResourceGroupName          = $Name
             Location                   = $Location
-            ImageName                  = $Name + "GoldenImage"
+            ImageName                  = $Name + "MasterImage"
             RunOutputName              = $Name + "WindowsRun"
             PublisherName              = $imageInfo.Publisher
             Offer                      = $imageInfo.Offer
@@ -113,14 +112,47 @@ function Install-AIBWin10MS {
         }
         $template = Update-AibTemplate @paramsUpdateAibTemplate #| Out-Null
 
+        $tempFile = New-TemporaryFile
+        
+        $template | Set-Content $tempfile
+
+        $resourceName = $Name + "WVDTemplate"
+
         $paramsInstallImageTemplate = @{
             Location          = $Location
             ResourceGroupName = $Name
-            ResourceName      = $Name + "WVDTemplate"
+            ResourceName      = $resourceName
             ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
-            Template          = $template
+            TemplateFile      = $tempFile
         }
         Install-ImageTemplate @paramsInstallImageTemplate #| Out-Null
+
+        Remove-Item $tempFile
+
+        $runState = 'Running'
+
+        while ($runState -eq 'Running' ) {
+            Start-Sleep 5
+            $status = Get-AibBuildStatus -ApiVersion $apiVersion -AzContext $azContext -ResourceGroupName $Name -ImageName $resourceName
+            $runState = $status.runState
+        }
+
+        if ($runState -ne 'Succeeded') {
+            Write-Error "Template deployment failed"
+            exit
+        }
+
+        $paramGetAzResource = @{
+            ResourceName      = $resourceName
+            ResourceGroupName = $Name 
+            ResourceType      = 'Microsoft.VirtualMachineImages/imageTemplates' 
+            ApiVersion        = $apiVersion
+        }
+
+        $resTemplateId = Get-AzResource @paramGetAzResource
+
+        Remove-AzResource -ResourceId $resTemplateId.ResourceId -Force
+
         
     } #Process
     END { } #End

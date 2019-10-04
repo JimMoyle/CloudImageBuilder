@@ -1,4 +1,4 @@
-function Get-AIBWin10ImageInfo {
+function Get-AibWin10ImageInfo {
     [CmdletBinding()]
 
     Param (
