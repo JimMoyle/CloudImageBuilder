@@ -96,7 +96,7 @@ function Install-AibWin10MS {
         New-AIBResourceGroup @paramNewAIBResourceGroup #| Out-Null
 
         $paramsUpdateAibTemplate = @{
-            TemplateUrl                = "https://publicresources.blob.core.windows.net/downloads/CustomTemplateWVD.json"
+            TemplateUrl                = "https://raw.githubusercontent.com/JimMoyle/CloudImageBuilder/master/Templates/GenericTemplate.json"
             ApiVersion                 = $apiVersion
             SubscriptionID             = $subscriptionID
             ResourceGroupName          = $Name
