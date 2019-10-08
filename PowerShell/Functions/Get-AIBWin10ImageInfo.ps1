@@ -36,6 +36,7 @@ function Get-AibWin10ImageInfo {
             PublisherName = $PublisherName
         }
 
+        # Check the offerings of a specific Microsoft Windows publisher
         $publisher = Get-AzVMImagePublisher -Location $Location
 
         if ($publisher.PublisherName -notcontains $publisherName) {
@@ -43,6 +44,7 @@ function Get-AibWin10ImageInfo {
             exit
         }
 
+        # Check the skus for a specific offer (including publisher and location)
         $offerList = Get-AzVMImageOffer @commonParams
 
         if ($offerList.Offer -notcontains $Offer) {
@@ -50,8 +52,10 @@ function Get-AibWin10ImageInfo {
             exit
         }
         
+        # Check the skus for a specific offer (including publisher and location)
         $sku = Get-AzVMImageSku @commonParams -Offer $Offer | Where-Object { $_.Skus -like $SkuMatchString }
 
+        # Check the version for a specific sku (including offer, publisher and location) and select the newest one
         $newestImage = $sku | Get-AzVMImage | Sort-Object -Descending -Property Version | Select-Object -First 1
 
         $output = [PSCustomObject]@{

@@ -36,8 +36,6 @@ function Get-AibBuildStatus {
         # Get instance profile
         $azureRmProfile = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile
         $profileClient = New-Object Microsoft.Azure.Commands.ResourceManager.Common.RMProfileClient($azureRmProfile)
-    
-        Write-Verbose ("Tenant: {0}" -f $AzContext.Subscription.Name)
  
         # Get token  
         $token = $profileClient.AcquireAccessToken($AzContext.Tenant.TenantId)
@@ -50,6 +48,7 @@ function Get-AibBuildStatus {
         $buildStatusResult = Invoke-WebRequest -Method GET  -Uri $urlBuildStatus -UseBasicParsing -Headers  @{"Authorization" = ("Bearer " + $accessToken) } -ContentType application/json 
         $buildStatus = $buildStatusResult.Content | ConvertFrom-Json
 
+        #Last runstatus holds the info we need from the API call
         Write-Output $buildStatus.properties.lastRunStatus
     }
     

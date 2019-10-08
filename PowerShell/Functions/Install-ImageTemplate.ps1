@@ -50,7 +50,8 @@ function Install-ImageTemplate {
             TemplateParameterObject = $templateParameterObject
         }
 
-        
+        # submit the template to the Azure Image Builder Service 
+        # (creates the image template artifact and stores dependent artifacts (scripts, etc) in the staging Resource Group IT_<resourcegroupname>_<temmplatename>)
         New-AzResourceGroupDeployment  @paramsRGD
 
         $paramsRA = @{
@@ -62,6 +63,7 @@ function Install-ImageTemplate {
             Force             = $true
         }
 
+        # Build the image, based on the template artifact
         Invoke-AzResourceAction @paramsRA
 
 

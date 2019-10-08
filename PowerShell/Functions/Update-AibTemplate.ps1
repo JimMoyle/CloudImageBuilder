@@ -114,7 +114,6 @@ function Update-AibTemplate {
 
         #grab json file content getting rid of http stuff and convert to object
         $template = $jsonTemplate.Content | ConvertFrom-Json
-        #$template= gc Templates\GenericTemplate.json | convertfrom-json
 
         #Set template values
         $template.resources.properties.buildTimeoutInMinutes = $BuildTimeoutInMinutes
@@ -122,12 +121,21 @@ function Update-AibTemplate {
         $template.resources.properties.source.offer = $Offer
         $template.resources.properties.source.sku = $Sku
         $template.resources.properties.source.version = $ImageVersion
-        #distribute is an array with one object so need the [0]
-        $template.resources.properties.distribute[0].type = $Type
-        $template.resources.properties.distribute[0].imageId = $imageId
-        $template.resources.properties.distribute[0].location = $Location
-        $template.resources.properties.distribute[0].runOutputName = $RunOutputName
-        $template.resources.properties.distribute[0].artifactTags = $tags
+
+        #Add each Managed Disk Image target to Location
+        foreach ($loc in $Location) {
+
+            $distrib = @{
+                type          = $Type
+                imageId       = $imageId
+                location      = $loc
+                runOutputName = $RunOutputName
+                artifactTags  = $tags
+            }
+            
+            $template.resources.properties.distribute += $distrib
+
+        }
 
         if ($PathToCustomizationScripts) {
 
@@ -144,7 +152,7 @@ function Update-AibTemplate {
                 $customization = [PSCustomObject]@{
                     type   = 'PowerShell'
                     name   = $file.BaseName
-                    inline = Get-Content -Path $file.FullName | ForEach-Object {$_.ToString()}
+                    inline = Get-Content -Path $file.FullName | ForEach-Object { $_.ToString() }
                 }
 
                 #Add customisation to template
