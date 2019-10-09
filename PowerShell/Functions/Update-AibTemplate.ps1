@@ -83,6 +83,16 @@ function Update-AibTemplate {
         [Parameter(
             ValuefromPipelineByPropertyName = $true
         )]
+        [System.String]$ImageDefName,
+
+        [Parameter(
+            ValuefromPipelineByPropertyName = $true
+        )]
+        [System.String]$SharedImageGalName,
+
+        [Parameter(
+            ValuefromPipelineByPropertyName = $true
+        )]
         [System.String]$PathToCustomizationScripts
         
     )
@@ -101,9 +111,7 @@ function Update-AibTemplate {
             exit
         }
 
-        #image id needed for builder
-        $imageId = "/subscriptions/$SubscriptionID/resourceGroups/$ResourceGroupName/providers/Microsoft.Compute/images/$ImageName"
-        
+       
         #You can create as many tags as you like here
         $tags = @{
             Source    = 'azVmImageBuilder'
@@ -122,19 +130,45 @@ function Update-AibTemplate {
         $template.resources.properties.source.sku = $Sku
         $template.resources.properties.source.version = $ImageVersion
 
-        #Add each Managed Disk Image target to Location
-        foreach ($loc in $Location) {
 
-            $distrib = @{
-                type          = $Type
-                imageId       = $imageId
-                location      = $loc
-                runOutputName = $RunOutputName
-                artifactTags  = $tags
-            }
+        switch ($Type) {
+            'ManagedImage' {  
+
+                #image id needed for builder
+                $imageId = "/subscriptions/$SubscriptionID/resourceGroups/$ResourceGroupName/providers/Microsoft.Compute/images/$ImageName"
+
+                #Add each Managed Disk Image target to Location
+                foreach ($loc in $Location) {
+
+                    $distrib = @{
+                        type          = $Type
+                        imageId       = $imageId
+                        location      = $loc
+                        runOutputName = $RunOutputName
+                        artifactTags  = $tags
+                    }
             
-            $template.resources.properties.distribute += $distrib
+                    $template.resources.properties.distribute += $distrib
 
+                }
+            }
+            'SharedImage' { 
+
+                #Gallery id needed for builder
+                $galleryImageId = "/subscriptions/$SubscriptionID/resourceGroups/$ResourceGroupName/providers/Microsoft.Compute/galleries/$sharedImageGalName/images/$imageDefName"
+
+                $distrib = [ordered]@{
+                    type               = $Type
+                    galleryImageId     = $galleryImageId
+                    runOutputName      = $RunOutputName
+                    artifactTags       = $tags
+                    replicationRegions = @($Location)
+                }
+            
+                $template.resources.properties.distribute += $distrib
+
+            }
+            Default { }
         }
 
         if ($PathToCustomizationScripts) {

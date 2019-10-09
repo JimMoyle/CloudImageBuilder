@@ -23,20 +23,28 @@ function Install-AibWin10MS {
             Position = 3,
             ValuefromPipelineByPropertyName = $true
         )]
+        [ValidateSet('ManagedImage', 'SharedImage')]
         [string]$OutputType = 'ManagedImage',
 
         [Parameter(
-            Position = 3,
+            Position = 4,
+            ValuefromPipelineByPropertyName = $true,
+            Mandatory = $true
+        )]
+        [Alias('Id')]
+        [string]$SubscriptionID,
+
+        [Parameter(
             ValuefromPipelineByPropertyName = $true
         )]
         [string]$PathToCustomizationScripts,
 
         [Parameter(
-            ValuefromPipelineByPropertyName = $true,
-            Mandatory = $true
+            ValuefromPipelineByPropertyName = $true
         )]
-        [Alias('Id')]
-        [string]$SubscriptionID
+        [string]$SharedImageGalleryName
+
+
 
     )
 
@@ -48,7 +56,7 @@ function Install-AibWin10MS {
         #region get functions
         $Private = @( Get-ChildItem -Path $PSScriptRoot\..\functions\*.ps1 -ErrorAction SilentlyContinue )
 
-        #Dot source the files
+        #Dot source the functions
         Foreach ($import in $Private) {
             Try {
                 Write-Verbose "Importing $($Import.FullName)"
@@ -62,8 +70,15 @@ function Install-AibWin10MS {
     } # Begin
     PROCESS {
 
-        #This will change once we are in GA, hopefully just to use the latest version
+        #Api Version will change once we are in GA, hopefully just to use the latest version
         $apiVersion = "2019-05-01-preview"
+
+        $sharedImageDefName = 'Windows10MultiSession'
+
+        if ($SharedImageGalleryName -and $OutputType -eq 'ManagedImage') {
+            Write-Error -Message "Managed Images cannot be used with shared galleries, set OutputType to SharedImage to use a gallery"
+            exit
+        }
 
         $azContext = Get-AzContext
         
@@ -95,6 +110,26 @@ function Install-AibWin10MS {
         }
         New-AIBResourceGroup @paramNewAIBResourceGroup #| Out-Null
 
+        if ($OutputType -eq 'SharedImage') {
+            try {
+                $paramUpdateSharedImageGallery = @{
+                    #ErrorAction        = 'Stop'
+                    SharedImageGalName = $SharedImageGalleryName
+                    ResourceGroupName  = $Name
+                    Location           = $Location
+                    ImageDefName       = $sharedImageDefName
+                    Publisher          = $imageInfo.Publisher
+                    Offer              = $imageInfo.Offer
+                    Sku                = $imageInfo.Sku
+                }
+                Update-SharedImageGallery @paramUpdateSharedImageGallery
+            }
+            catch {
+                Write-Error "Could not validate or create Gallery $SharedImageGalleryName"
+                exit
+            }
+        }
+
         $paramsUpdateAibTemplate = @{
             TemplateUrl                = "https://raw.githubusercontent.com/JimMoyle/CloudImageBuilder/master/Templates/GenericTemplate.json"
             ApiVersion                 = $apiVersion
@@ -109,6 +144,8 @@ function Install-AibWin10MS {
             Type                       = $OutputType
             Sku                        = $imageInfo.Sku
             PathToCustomizationScripts = $PathToCustomizationScripts
+            SharedImageGalName         = $SharedImageGalleryName
+            ImageDefName              = $sharedImageDefName 
         }
         $template = Update-AibTemplate @paramsUpdateAibTemplate #| Out-Null
 
@@ -119,13 +156,20 @@ function Install-AibWin10MS {
         $resourceName = $Name + "WVDTemplate"
 
         $paramsInstallImageTemplate = @{
+            #ErrorAction        = 'Stop'
             Location          = $Location
             ResourceGroupName = $Name
             ResourceName      = $resourceName
             ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
             TemplateFile      = $tempFile
         }
-        Install-ImageTemplate @paramsInstallImageTemplate #| Out-Null
+        try{
+            Install-ImageTemplate @paramsInstallImageTemplate #| Out-Null
+        }
+        catch{
+            Write-Error "Could Not install Image Template"
+            exit
+        }
 
         Remove-Item $tempFile
 
@@ -138,7 +182,7 @@ function Install-AibWin10MS {
         }
 
         if ($runState -ne 'Succeeded') {
-            Write-Error "Template deployment failed"
+            Write-Error "Template deployment failed.  Please manually clean up resources"
             exit
         }
 

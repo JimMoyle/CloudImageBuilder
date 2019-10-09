@@ -41,14 +41,15 @@ function New-AIBResourceGroup {
     } # Begin
     PROCESS {
         # Create a resource group to store the image configuration template artifact and the image
-        New-AzResourceGroup -Name $Name -Location $Location
-        
+        New-AzResourceGroup -Name $Name -Location $Location -Force
+
+        #TODO: Check for existing roleassignment
+
         $paramNewAzRoleAssignment = @{
             ApplicationId      = $AzureImageBuilderAppID
             RoleDefinitionName = 'Contributor' 
             Scope              = "/subscriptions/$SubscriptionID/resourceGroups/$Name"
         }
-
         # Set Permission on the Resource Group (The --assignee value is the app registration ID for the Image Builder service.)
         New-AzRoleAssignment @paramNewAzRoleAssignment
        

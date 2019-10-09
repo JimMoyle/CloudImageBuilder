@@ -66,7 +66,6 @@ function Install-ImageTemplate {
         # Build the image, based on the template artifact
         Invoke-AzResourceAction @paramsRA
 
-
     } #Process
     END { } #End
 }  #function Install-ImageTemplate
