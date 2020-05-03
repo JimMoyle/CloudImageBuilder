@@ -74,7 +74,7 @@ function Update-AibTemplate {
             Mandatory = $true
         )]
         [System.String]$Type,
-        
+
         [Parameter(
             ValuefromPipelineByPropertyName = $true
         )]
@@ -94,7 +94,7 @@ function Update-AibTemplate {
             ValuefromPipelineByPropertyName = $true
         )]
         [System.String]$PathToCustomizationScripts
-        
+
     )
 
     BEGIN {
@@ -108,10 +108,10 @@ function Update-AibTemplate {
         }
         catch {
             Write-Error "Cannot connect to $TemplateUrl to download json template"
-            exit
+            return
         }
 
-       
+
         #You can create as many tags as you like here
         $tags = @{
             Source    = 'azVmImageBuilder'
@@ -132,7 +132,7 @@ function Update-AibTemplate {
 
 
         switch ($Type) {
-            'ManagedImage' {  
+            'ManagedImage' {
 
                 #image id needed for builder
                 $imageId = "/subscriptions/$SubscriptionID/resourceGroups/$ResourceGroupName/providers/Microsoft.Compute/images/$ImageName"
@@ -147,12 +147,12 @@ function Update-AibTemplate {
                         runOutputName = $RunOutputName
                         artifactTags  = $tags
                     }
-            
+
                     $template.resources.properties.distribute += $distrib
 
                 }
             }
-            'SharedImage' { 
+            'SharedImage' {
 
                 #Gallery id needed for builder
                 $galleryImageId = "/subscriptions/$SubscriptionID/resourceGroups/$ResourceGroupName/providers/Microsoft.Compute/galleries/$sharedImageGalName/images/$imageDefName"
@@ -164,7 +164,7 @@ function Update-AibTemplate {
                     artifactTags       = $tags
                     replicationRegions = @($Location)
                 }
-            
+
                 $template.resources.properties.distribute += $distrib
 
             }

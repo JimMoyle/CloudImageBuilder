@@ -30,9 +30,9 @@ function Get-AibWin10ImageInfo {
         Set-StrictMode -Version Latest
     } # Begin
     PROCESS {
-        
+
         $commonParams = @{
-            Location      = $Location 
+            Location      = $Location
             PublisherName = $PublisherName
         }
 
@@ -41,7 +41,7 @@ function Get-AibWin10ImageInfo {
 
         if ($publisher.PublisherName -notcontains $publisherName) {
             Write-Error "Publisher list does not contain $publisherName"
-            exit
+            return
         }
 
         # Check the skus for a specific offer (including publisher and location)
@@ -49,9 +49,9 @@ function Get-AibWin10ImageInfo {
 
         if ($offerList.Offer -notcontains $Offer) {
             Write-Error "Offer list does not contain $Offer"
-            exit
+            return
         }
-        
+
         # Check the skus for a specific offer (including publisher and location)
         $sku = Get-AzVMImageSku @commonParams -Offer $Offer | Where-Object { $_.Skus -like $SkuMatchString }
 

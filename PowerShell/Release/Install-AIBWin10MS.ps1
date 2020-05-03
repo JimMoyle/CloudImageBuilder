@@ -3,7 +3,7 @@ function Install-AibWin10MS {
     [CmdletBinding()]
 
     Param (
-        
+
         [Parameter(
             Position = 1,
             ValuefromPipelineByPropertyName = $true,
@@ -77,20 +77,20 @@ function Install-AibWin10MS {
 
         if ($SharedImageGalleryName -and $OutputType -eq 'ManagedImage') {
             Write-Error -Message "Managed Images cannot be used with shared galleries, set OutputType to SharedImage to use a gallery"
-            exit
+            return
         }
 
         $azContext = Get-AzContext
-        
+
         if ($azContext.Subscription.Id -ne $SubscriptionID) {
             Write-Error "Can not find Subscription ID $SubscriptionID in current Azure context, Use Connect-AzAccout or Select-AzContext to correct this."
-            exit
+            return
         }
-        
+
         $tenantID = $azContext.Subscription.TenantId
         if ((Get-AzSubscription -TenantId $TenantID).SubscriptionId -notcontains $subscriptionID ) {
             Write-Error "Cannot find subscrioption Id $subscriptionID in tenant"
-            exit
+            return
         }
 
         $imageInfo = Get-AIBWin10ImageInfo -Location $Location
@@ -99,7 +99,7 @@ function Install-AibWin10MS {
 
         if ($aibProvider.RegistrationState -ne 'Registered') {
             Write-Error "pre-reqs not met for Azure Image Builder. Check https://docs.microsoft.com/en-us/azure/virtual-machines/windows/image-builder for all pre-requisite steps"
-            exit
+            return
         }
 
         $paramNewAIBResourceGroup = @{
@@ -126,7 +126,7 @@ function Install-AibWin10MS {
             }
             catch {
                 Write-Error "Could not validate or create Gallery $SharedImageGalleryName"
-                exit
+                return
             }
         }
 
@@ -145,12 +145,12 @@ function Install-AibWin10MS {
             Sku                        = $imageInfo.Sku
             PathToCustomizationScripts = $PathToCustomizationScripts
             SharedImageGalName         = $SharedImageGalleryName
-            ImageDefName              = $sharedImageDefName 
+            ImageDefName               = $sharedImageDefName
         }
         $template = Update-AibTemplate @paramsUpdateAibTemplate #| Out-Null
 
         $tempFile = New-TemporaryFile
-        
+
         $template | Set-Content $tempfile
 
         $resourceName = $Name + "WVDTemplate"
@@ -163,12 +163,12 @@ function Install-AibWin10MS {
             ResourceType      = "Microsoft.VirtualMachineImages/ImageTemplates"
             TemplateFile      = $tempFile
         }
-        try{
+        try {
             Install-ImageTemplate @paramsInstallImageTemplate #| Out-Null
         }
-        catch{
+        catch {
             Write-Error "Could Not install Image Template"
-            exit
+            return
         }
 
         Remove-Item $tempFile
@@ -183,13 +183,13 @@ function Install-AibWin10MS {
 
         if ($runState -ne 'Succeeded') {
             Write-Error "Template deployment failed.  Please manually clean up resources"
-            exit
+            return
         }
 
         $paramGetAzResource = @{
             ResourceName      = $resourceName
-            ResourceGroupName = $Name 
-            ResourceType      = 'Microsoft.VirtualMachineImages/imageTemplates' 
+            ResourceGroupName = $Name
+            ResourceType      = 'Microsoft.VirtualMachineImages/imageTemplates'
             ApiVersion        = $apiVersion
         }
 
@@ -197,7 +197,7 @@ function Install-AibWin10MS {
 
         Remove-AzResource -ResourceId $resTemplateId.ResourceId -Force
 
-        
+
     } #Process
     END { } #End
 }  #function Install-AIBWin10MS

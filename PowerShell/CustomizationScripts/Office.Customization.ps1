@@ -11,4 +11,4 @@ Expand-Archive -Path "$path\Install\Office365ProPlus.zip" -DestinationPath "$pat
 
 $cmdPath = "$path\Unzipped\Office365ProPlus\setup.exe"
 $cmdArgList = "/configure `"$path\Unzipped\Office365ProPlus\WVDconfiguration.xml`""
-Start-Process -FilePath $cmdPath -ArgumentList $cmdArgList -Wait -RedirectStandardError "$path\Logs\O365Error.log"ConvertTo-Hashtable.ps1
+Start-Process -FilePath $cmdPath -ArgumentList $cmdArgList -Wait -RedirectStandardError "$path\Logs\O365Error.log"#ConvertTo-Hashtable.ps1
