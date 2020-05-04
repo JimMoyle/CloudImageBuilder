@@ -24,7 +24,7 @@ function Install-AibWin10MS {
             ValuefromPipelineByPropertyName = $true
         )]
         [ValidateSet('ManagedImage', 'SharedImage')]
-        [string]$OutputType = 'ManagedImage',
+        [string]$OutputType = 'SharedImage',
 
         [Parameter(
             Position = 4,

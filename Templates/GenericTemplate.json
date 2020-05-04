@@ -12,14 +12,20 @@
             "type": "string"
         }
     },
-    "variables": {},
+    "variables": {
+    },
     "resources": [
         {
             "name": "[parameters('imageTemplateName')]",
             "type": "Microsoft.VirtualMachineImages/imageTemplates",
             "apiVersion": "[parameters('api-version')]",
             "location": "[parameters('svclocation')]",
-            "dependsOn": [],
+            "dependsOn": [
+            ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": "IdObject"
+            },
             "properties": {
                 "buildTimeoutInMinutes": "int",
                 "source": {
@@ -29,8 +35,10 @@
                     "sku": "string",
                     "version": "string"
                 },
-                "customize": [],
-                "distribute": []
+                "customize": [
+                ],
+                "distribute": [
+                ]
             }
         }
     ]

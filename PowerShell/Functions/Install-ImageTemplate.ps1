@@ -35,7 +35,7 @@ function Install-ImageTemplate {
     BEGIN {
         Set-StrictMode -Version Latest
     } # Begin
-    PROCESS {   
+    PROCESS {
 
         $templateParameterObject = @{
             "imageTemplateName" = $resourceName
@@ -48,23 +48,38 @@ function Install-ImageTemplate {
             Name                    = $ResourceName
             TemplateFile            = $TemplateFile
             TemplateParameterObject = $templateParameterObject
+            ErrorAction             = 'Stop'
         }
 
-        # submit the template to the Azure Image Builder Service 
+        # submit the template to the Azure Image Builder Service
         # (creates the image template artifact and stores dependent artifacts (scripts, etc) in the staging Resource Group IT_<resourcegroupname>_<temmplatename>)
-        New-AzResourceGroupDeployment  @paramsRGD
+        try {
+            New-AzResourceGroupDeployment  @paramsRGD
+        }
+        catch {
+            Write-Error $error[0]
+            return
+        }
+
 
         $paramsRA = @{
-            ResourceGroupName = $ResourceGroupName 
-            ResourceType      = $resourceType 
-            ResourceName      = $resourceName 
-            Action            = "Run" 
-            ApiVersion        = $apiVersion 
+            ResourceGroupName = $ResourceGroupName
+            ResourceType      = $resourceType
+            ResourceName      = $resourceName
+            Action            = "Run"
+            ApiVersion        = $apiVersion
             Force             = $true
         }
 
         # Build the image, based on the template artifact
-        Invoke-AzResourceAction @paramsRA
+        try {
+            Invoke-AzResourceAction @paramsRA
+        }
+        catch {
+            Write-Error $error[0]
+            Write-Error 'Deployment failed'
+        }
+
 
     } #Process
     END { } #End
